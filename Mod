@@ -36,10 +36,10 @@ class MessageStatsMod(loader.Module):
                 month_count += 1
             if msg.date.date() >= self.all_time:
                 all_count += 1
-
+        stats_text = f"<b>👾Ваша статистика активности в этом чате:</b>"
         day_text = f"<b>За день:</b> <code>{day_count}</code>"
         week_text = f"<b>За неделю:</b> <code>{week_count}</code>"
         month_text = f"<b>За месяц:</b> <code>{month_count}</code>"
         all_text = f"<b>За все время:</b> <code>{all_count}</code>"
 
-        await rutils.answer(message, "\n".join([<b>👾Ваша статистика активности в этом чате:</b> day_text, week_text, month_text, all_text]))
+        await rutils.answer(message, "\n".join([stats_text, day_text, week_text, month_text, all_text]))
