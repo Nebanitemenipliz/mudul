@@ -1,35 +1,43 @@
-
 import datetime
-from telethon import events
+from telethon import events, utils
 from telethon.tl import types
-from telethon.tl.functions.users import GetFullUserRequest
-from telethon.tl.types import User
 
 from .. import loader, utils
 
 
 @loader.tds
-class CountdownMod(loader.Module):
-    """Показывает сколько дней осталось до целевой даты"""
-    strings = {"name": "Countdown"}
+class MessageStatsMod(loader.Module):
+    """Показывает статистику сообщений в текущем чате"""
+    strings = {"name": "MessageStats"}
 
     def __init__(self):
-        self.config = loader.ModuleConfig("target_date", datetime.datetime.strptime("2023-03-18", "%Y-%m-%d").date(), "Целевая дата для отсчета")
-
-    async def countdowncmd(self, message: types.Message):
-        """Показывает сколько дней осталось до целевой даты"""
-        today = datetime.datetime.now().date()
-        target_date = self.config["target_date"]
-        days_left = (target_date - today).days
-      
-        if days_left > 0:
-            message_text = f"До {target_date.strftime('%d.%m.%Y')} осталось {days_left} дней"
-        elif days_left == 0:
-            message_text = f"Сегодня {target_date.strftime('%d.%m.%Y')}!"
-        else:
-            message_text = f"{target_date.strftime('%d.%m.%Y')} уже прошло"
-
-        await utils.answer(message, message_text)
+        self.name = self.strings["name"]
+        self._client = None
+        self.today = datetime.datetime.now().date()
+        self.week_ago = self.today - datetime.timedelta(days=7)
+        self.month_ago = self.today.replace(day=1)
+        self.all_time = None
 
     async def client_ready(self, client, db):
-        self.client = client
+        self._client = client
+        self.all_time = (await self._client.get_messages(await self._client.get_input_entity(await self._client.get_me()), limit=1))[0].date.date()
+
+    async def messagestatscmd(self, message: types.Message):
+        """Показывает статистику сообщений"""
+        day_count = week_count = month_count = all_count = 0
+        async for msg in self._client.iter_messages(message.to_id):
+            if msg.date.date() == self.today:
+                day_count += 1
+            if self.week_ago <= msg.date.date() <= self.today:
+                week_count += 1
+            if self.month_ago <= msg.date.date() <= self.today:
+                month_count += 1
+            if msg.date.date() >= self.all_time:
+                all_count += 1
+
+        day_text = f"За день: {day_count}"
+        week_text = f"За неделю: {week_count}"
+        month_text = f"За месяц: {month_count}"
+        all_text = f"За все время: {all_count}"
+
+        await utils.answer(message, f"{day_text}\n{week_text}\n{month_text}\n{all_text}")
