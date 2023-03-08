@@ -28,7 +28,7 @@ class MessageStatsMod(loader.Module):
         """Показать статистику сообщений"""
         await utils.answer(message, f"<b>👺🔪Ищу сообщения...</b>")
         day_count = week_count = month_count = all_count = 0
-        async for msg in self._client.iter_messages(message.to_id):
+        async for msg in self._client.iter_messages(message.to_id, limit=100000):
             if msg.date.date() == self.today:
                 day_count += 1
             if self.week_ago <= msg.date.date() <= self.today:
