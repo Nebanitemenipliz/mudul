@@ -1,4 +1,5 @@
 # meta developer: @modwini
+# subscribe to the channel 
 import datetime
 from telethon import events, utils
 from telethon.tl import types
