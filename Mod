@@ -1,3 +1,4 @@
+
 import datetime
 from telethon import events
 from telethon.tl import types
@@ -17,7 +18,7 @@ class CountdownMod(loader.Module):
 
     async def countdowncmd(self, message: types.Message):
         """Показывает сколько дней осталось до целевой даты"""
-        today = datetime.date.today()
+        today = datetime.datetime.now().date()
         target_date = self.config["target_date"]
         days_left = (target_date - today).days
       
