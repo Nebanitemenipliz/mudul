@@ -1,10 +1,8 @@
 # meta developer: @modwini
 import datetime
-from telethon import events, utils
-from telethon.tl import types
+from telethon import events, types, utils
 
-
-from .. import loader, utils as local_utils
+from .. import loader, utils as rutils
 
 
 @loader.tds
@@ -14,30 +12,22 @@ class MessageStatsMod(loader.Module):
 
     def __init__(self):
         self.name = self.strings["name"]
-        self._client = None
-        self.today = datetime.datetime.now().date()
+        self.client = None
+        self.today = datetime.date.today()
         self.week_ago = self.today - datetime.timedelta(days=7)
         self.month_ago = self.today.replace(day=1)
         self.all_time = None
 
     async def client_ready(self, client, db):
-        self._client = client
-        self.all_time = (await self._client.get_messages(
-            await self._client.get_input_entity(await self._client.get_me()),
-            limit=1
-        ))[0].date.date()
+        self.client = client
+        self.all_time = (await self.client.get_messages(await self.client.get_me(), limit=1))[0].date.date()
 
+    @loader.ratelimit
     async def statscmd(self, message: types.Message):
         """Показать статистику сообщений"""
-        await local_utils.answer(
-            message,
-            f"<b>👺🔪Ищу сообщения...</b>"
-        )
+        await rutils.answer(message, "<b>👺🔪Ищу сообщения...</b>")
         day_count = week_count = month_count = all_count = 0
-        async for msg in self._client.iter_messages(
-            message.to_id,
-            from_user='me'  # ограничить сообщениями только от себя
-        ):
+        async for msg in self.client.iter_messages(message.to_id, limit=1000):
             if msg.date.date() == self.today:
                 day_count += 1
             if self.week_ago <= msg.date.date() <= self.today:
@@ -52,7 +42,4 @@ class MessageStatsMod(loader.Module):
         month_text = f"<b>За месяц:</b> <code>{month_count}</code>"
         all_text = f"<b>За все время:</b> <code>{all_count}</code>"
 
-        await local_utils.answer(
-            message,
-            "\n".join([day_text, week_text, month_text, all_text])
-        )
+        await rutils.answer(message, "\n".join([<b>👾Ваша статистика активности в этом чате:</b> day_text, week_text, month_text, all_text]))
