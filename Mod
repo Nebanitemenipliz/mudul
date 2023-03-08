@@ -23,7 +23,7 @@ class MessageStatsMod(loader.Module):
         self._client = client
         self.all_time = (await self._client.get_messages(await self._client.get_input_entity(await self._client.get_me()), limit=1))[0].date.date()
 
-    async def messagestatscmd(self, message: types.Message):
+    async def statscmd(self, message: types.Message):
         """Показать статистику сообщений"""
         await utils.answer(message, f"<b>👺🔪Ищу сообщения...</b>")
         day_count = week_count = month_count = all_count = 0
