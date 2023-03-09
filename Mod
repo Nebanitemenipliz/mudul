@@ -1,1 +1,18 @@
 #аааа
+from telethon import TelegramClient, events, Button
+from typing import Optional
+from .. import loader
+
+@loader.tds
+class MyBotMod(loader.Module):
+    """Модуль для отправки сообщений с кнопкой"""
+    
+    def __init__(self):
+        self._client = _client()
+
+    async def my_bot_cmd(self, event):
+        await event.reply('Привет', buttons=[Button.inline('kanal', 'https://t.me/modwini')])
+
+
+def setup(bot):
+    bot.add_cog(MyBotMod())
