@@ -1,25 +1,29 @@
-from telethon import TelegramClient, events, Button
-from typing import Optional
-from .. import loader
+# Импортируем необходимые модули
+from telethon import events, types, utils, Button
+from telethon.tl.types import InputWebDocument, InputWebFileLocation, Message
+from telethon.tl.functions.messages import SendMessageRequest
 
-
-def _client() -> Optional[TelegramClient]:
-    client = getattr(loader.tg, '_client', None)
-    if client is None:
-        return None
-    return client
-
-
+# Определяем класс модуля и добавляем декоратор loader.tds
 @loader.tds
-class MyBotMod(loader.Module):
-    """Модуль для отправки сообщений с кнопкой"""
+class MyModuleClassMod(loader.Module):
+    """Краткое описание модуля"""
     
-    def __init__(self):
-        self._client = _client()
-
-    async def my_bot_cmd(self, event):
-        await event.reply('Привет', buttons=[Button.inline('kanal', 'https://t.me/modwini')])
-
-
-def setup(bot):
-    bot.add_cog(MyBotMod())
+    # Определяем строки для локализации (замените их на нужные вам)
+    strings = {"name": "MyModule",
+               "hello": "<b>Привет!</b>",
+               "button_text": "Нажми меня!",
+               "button_url": "https://t.me/mybotchannel"}
+    
+    # Определяем метод-обработчик команды
+    @loader.unrestricted
+    async def mycmd(self, event: events.NewMessage):
+        """Описание команды"""
+        
+        # Отправляем ответное сообщение с приветствием
+        await event.respond(self.strings["hello"])
+        
+        # Создаем кнопку для отправки ссылки
+        button = Button.url(self.strings["button_text"], self.strings["button_url"])
+        
+        # Отправляем сообщение с кнопкой
+        await event.respond("Это кнопка для теста:", buttons=button)
