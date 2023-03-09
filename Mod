@@ -15,18 +15,10 @@ import random
 from telethon.tl import types, functions
 from telethon.tl.types import PeerUser
 
-from telethon import events, sync
-from telethon.tl import types
-
-import urllib.request
-
 from telethon import events
 from telethon.tl import functions
 
 from .. import loader, utils
-
-def register(cb):
-    cb(KittiesMod())
 
 class KittiesMod(loader.Module):
     """Скидывает фотографии котиков"""
@@ -73,7 +65,6 @@ class KittiesMod(loader.Module):
             silent=True
         ))
 
-    @loader.tds
     async def client_ready(self, client, db):
         self.client = client
         await self.get_kitty_urls(10)
