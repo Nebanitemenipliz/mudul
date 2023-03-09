@@ -1,29 +1,41 @@
-# Импортируем необходимые модули
-from telethon import events, types, utils, Button
-from telethon.tl.types import InputWebDocument, InputWebFileLocation, Message
-from telethon.tl.functions.messages import SendMessageRequest
+from telethon import events, utils, Button
+from telethon.tl.types import InputTextMessageContent
+from telethon.tl.types import InlineKeyboardButton, InlineKeyboardMarkup
+from telethon.tl.functions.messages import EditMessageTextRequest
+from telethon.tl.functions.messages import DeleteMessagesRequest
 
-# Определяем класс модуля и добавляем декоратор loader.tds
+from telethon import functions, types
+
+from .. import loader, utils
+
+
 @loader.tds
-class MyModuleClassMod(loader.Module):
-    """Краткое описание модуля"""
-    
-    # Определяем строки для локализации (замените их на нужные вам)
-    strings = {"name": "MyModule",
-               "hello": "<b>Привет!</b>",
-               "button_text": "Нажми меня!",
-               "button_url": "https://t.me/mybotchannel"}
-    
-    # Определяем метод-обработчик команды
+class InlineButtonMod(loader.Module):
+    strings = {
+        "name": "InlineButtonMod",
+        "vk_text": "Your VK page",
+        "vk_link": "https://vk.com",
+        "button_text": "Click me"
+    }
+
+    def __init__(self):
+        self.config = loader.ModuleConfig(
+            vk_text=self.strings["vk_text"],
+            vk_link=self.strings["vk_link"],
+            button_text=self.strings["button_text"]
+        )
+
+    async def client_ready(self, client, db):
+        self.client = client
+
     @loader.unrestricted
-    async def mycmd(self, event: events.NewMessage):
-        """Описание команды"""
-        
-        # Отправляем ответное сообщение с приветствием
-        await event.respond(self.strings["hello"])
-        
-        # Создаем кнопку для отправки ссылки
-        button = Button.url(self.strings["button_text"], self.strings["button_url"])
-        
-        # Отправляем сообщение с кнопкой
-        await event.respond("Это кнопка для теста:", buttons=button)
+    async def inlinebcmd(self, message):
+        """Create inline button with vk link"""
+        text = self.config["vk_text"]
+        link = self.config["vk_link"]
+        button_text = self.config["button_text"]
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(button_text, url=link)]])
+        await self.client.send_message(entity=message.chat_id, message=text, reply_markup=keyboard)
+
+    async def client_ready(self, client, db):
+        self.client = client
