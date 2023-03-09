@@ -1,3 +1,6 @@
+from telethon.tl.types import Message  # type: ignore
+
+from .. import loader, utils
 from telethon import events, utils, Button
 from telethon.tl.types import InputTextMessageContent
 from telethon.tl.types import InlineKeyboardButton, InlineKeyboardMarkup
