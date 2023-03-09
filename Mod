@@ -1,44 +1,98 @@
-from telethon.tl.types import Message  # type: ignore
+from telethon import Button
+from telethon.tl.functions.messages import SendMediaRequest
+from telethon.tl.types import InputMediaPhoto
+from telethon.events import CallbackQuery
+
+from telethon import events, sync
+from telethon.tl import functions, types
+from telethon.sync import TelegramClient
+from telethon.sessions import StringSession
+
+import aiohttp
+import io
+import random
+
+from telethon.tl import types, functions
+from telethon.tl.types import PeerUser
+
+from telethon import events, sync
+from telethon.tl import types
+
+import urllib.request
+
+from telethon import events
+from telethon.tl import functions
 
 from .. import loader, utils
-from telethon import events, utils, Button
-from telethon.tl.types import InputTextMessageContent
-from telethon.tl.types import InlineKeyboardButton, InlineKeyboardMarkup
-from telethon.tl.functions.messages import EditMessageTextRequest
-from telethon.tl.functions.messages import DeleteMessagesRequest
 
-from telethon import functions, types
+def register(cb):
+    cb(KittiesMod())
 
-from .. import loader, utils
-
-
-@loader.tds
-class InlineButtonMod(loader.Module):
-    strings = {
-        "name": "InlineButtonMod",
-        "vk_text": "Your VK page",
-        "vk_link": "https://vk.com",
-        "button_text": "Click me"
-    }
-
+class KittiesMod(loader.Module):
+    """Скидывает фотографии котиков"""
     def __init__(self):
-        self.config = loader.ModuleConfig(
-            vk_text=self.strings["vk_text"],
-            vk_link=self.strings["vk_link"],
-            button_text=self.strings["button_text"]
-        )
+        self.name = "Kitties"
+        self.client = None
+        self.urls = []
+        self.current_index = -1
 
+    async def get_kitty_url(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://api.thecatapi.com/v1/images/search") as response:
+                if response.status == 200:
+                    json = await response.json()
+                    return json[0]["url"]
+                else:
+                    return None
+
+    async def get_kitty_urls(self, count):
+        self.urls = []
+        for i in range(count):
+            self.urls.append(await self.get_kitty_url())
+        self.current_index = 0
+
+    async def send_current_kitty(self, event):
+        if self.current_index < 0 or self.current_index >= len(self.urls):
+            return
+
+        url = self.urls[self.current_index]
+        with urllib.request.urlopen(url) as url_response:
+            data = url_response.read()
+            media = InputMediaPhoto(io.BytesIO(data))
+
+        await event.client(SendMediaRequest(
+            peer=await event.get_input_chat(),
+            media=media,
+            message="",
+            buttons=[
+                [
+                    Button.inline("⬅️", data=b"prev"),
+                    Button.inline("➡️", data=b"next"),
+                ]
+            ],
+            silent=True
+        ))
+
+    @loader.tds
     async def client_ready(self, client, db):
         self.client = client
+        await self.get_kitty_urls(10)
 
     @loader.unrestricted
-    async def inlinebcmd(self, message):
-        """Create inline button with vk link"""
-        text = self.config["vk_text"]
-        link = self.config["vk_link"]
-        button_text = self.config["button_text"]
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(button_text, url=link)]])
-        await self.client.send_message(entity=message.chat_id, message=text, reply_markup=keyboard)
+    @loader.ratelimit
+    @loader.tds
+    async def kittycmd(self, message):
+        """Отправляет фотографию котика"""
+        await self.send_current_kitty(message)
 
-    async def client_ready(self, client, db):
-        self.client = client
+    @loader.unrestricted
+    @loader.ratelimit
+    @loader.tds
+    @events.register(CallbackQuery())
+    async def button_click(self, event):
+        if event.data == b"prev":
+            self.current_index -= 1
+        elif event.data == b"next":
+            self.current_index += 1
+
+        await self.send_current_kitty(event)
