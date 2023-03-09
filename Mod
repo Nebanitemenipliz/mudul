@@ -1,89 +1,40 @@
-from telethon import Button
-from telethon.tl.functions.messages import SendMediaRequest
-from telethon.tl.types import InputMediaPhoto
-from telethon.events import CallbackQuery
-
-from telethon import events, sync
-from telethon.tl import functions, types
-from telethon.sync import TelegramClient
-from telethon.sessions import StringSession
-
-import aiohttp
-import io
-import random
-
-from telethon.tl import types, functions
-from telethon.tl.types import PeerUser
-
 from telethon import events
-from telethon.tl import functions
-
+from telethon import errors
+from googletrans import Translator
 from .. import loader, utils
 
-class KittiesMod(loader.Module):
-    """Скидывает фотографии котиков"""
+class TranslateMod(loader.Module):
+    """Переводит текст"""
     def __init__(self):
-        self.name = "Kitties"
-        self.client = None
-        self.urls = []
-        self.current_index = -1
+        self.name = "Translate"
+        self.config = loader.ModuleConfig("DEFAULT_TRANSLATE_TO", "ru", "Переводить по умолчанию на")
+        self.translator = Translator()
 
-    async def get_kitty_url(self):
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://api.thecatapi.com/v1/images/search") as response:
-                if response.status == 200:
-                    json = await response.json()
-                    return json[0]["url"]
-                else:
-                    return None
-
-    async def get_kitty_urls(self, count):
-        self.urls = []
-        for i in range(count):
-            self.urls.append(await self.get_kitty_url())
-        self.current_index = 0
-
-    async def send_current_kitty(self, event):
-        if self.current_index < 0 or self.current_index >= len(self.urls):
+    @loader.tds
+    async def translatecmd(self, message):
+        """Переводит текст"""
+        if not message.is_reply:
+            await message.edit("Нет текста для перевода.")
             return
 
-        url = self.urls[self.current_index]
-        with urllib.request.urlopen(url) as url_response:
-            data = url_response.read()
-            media = InputMediaPhoto(io.BytesIO(data))
+        # получаем текст из сообщения
+        reply_msg = await message.get_reply_message()
+        text = reply_msg.text
 
-        await event.client(SendMediaRequest(
-            peer=await event.get_input_chat(),
-            media=media,
-            message="",
-            buttons=[
-                [
-                    Button.inline("⬅️", data=b"prev"),
-                    Button.inline("➡️", data=b"next"),
-                ]
-            ],
-            silent=True
-        ))
+        # получаем язык и направление перевода
+        translate_to = self.config["DEFAULT_TRANSLATE_TO"].lower()
+        lang_to = "uk" if translate_to == "ua" else translate_to
+        lang_from = self.translator.detect(text).lang
+
+        # переводим текст
+        try:
+            translated = self.translator.translate(text, dest=lang_to, src=lang_from).text
+        except errors.TranslateError as e:
+            await message.edit(f"Ошибка при переводе текста: {e}")
+            return
+
+        # отображаем переведенный текст
+        await message.edit(f"{translated}\n\nПереведено с {lang_from.upper()} на {translate_to.upper()}")
 
     async def client_ready(self, client, db):
         self.client = client
-        await self.get_kitty_urls(10)
-
-    @loader.unrestricted
-    @loader.ratelimit
-    @loader.tds
-    async def kittycmd(self, message):
-        """Отправляет фотографию котика"""
-        await self.send_current_kitty(message)
-
-    @loader.unrestricted
-    @loader.ratelimit
-    @loader.tds
-    @events.register(CallbackQuery())
-    async def button_click(self, event):
-        if event.data == b"prev":
-            self.current_index -= 1
-        elif event.data == b"next":
-            self.current_index += 1
-
-        await self.send_current_kitty(event)
