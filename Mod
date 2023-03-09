@@ -7,52 +7,38 @@ from .. import loader, utils
 
 @loader.tds
 class MessageStatsMod(loader.Module):
-    """Показывает сколько вы написали сообщений в текущем чате"""
+    """Показывает статистику сообщений в текущем чате"""
     strings = {"name": "MessageStats"}
 
     def __init__(self):
         self.name = self.strings["name"]
         self._client = None
-        self.today = None
-        self.week_ago = None
-        self.month_ago = None
+        self.today = datetime.datetime.now().date()
+        self.week_ago = self.today - datetime.timedelta(days=7)
+        self.month_ago = self.today.replace(day=1)
         self.all_time = None
 
     async def client_ready(self, client, db):
         self._client = client
-        self.today = datetime.datetime.now().date()
-        self.week_ago = self.today - datetime.timedelta(days=7)
-        self.month_ago = self.today.replace(day=1)
         self.all_time = (await self._client.get_messages(await self._client.get_input_entity(await self._client.get_me()), limit=1))[0].date.date()
 
-    async def statscmd(self, message: types.Message):
-        """Показать статистику сообщений"""
-        if self.today is None:
-            await utils.answer(message, "<b>👺🔪Ищу сообщения...</b>")
-            return
+    async def messagestatscmd(self, message: types.Message):
+        """Показывает статистику сообщений"""
+        await utils.answer(message, "👺🔪Считаю сообщения...")
+        day_count = week_count = month_count = all_count = 0
+        async for msg in self._client.iter_messages(message.to_id):
+            if msg.date.date() == self.today:
+                day_count += 1
+            if self.week_ago <= msg.date.date() <= self.today:
+                week_count += 1
+            if self.month_ago <= msg.date.date() <= self.today:
+                month_count += 1
+            if msg.date.date() >= self.all_time:
+                all_count += 1
 
-        await utils.answer(message, f"<b>👾Ваша статистика активности в этом чате:</b>\n"
-                                    f"<b>За день:</b> <code>{day_count}</code>\n"
-                                    f"<b>За неделю:</b> <code>{week_count}</code>\n"
-                                    f"<b>За месяц:</b> <code>{month_count}</code>\n"
-                                    f"<b>За все время:</b> <code>{all_count}</code>")
+        day_text = f"За день: {day_count}"
+        week_text = f"За неделю: {week_count}"
+        month_text = f"За месяц: {month_count}"
+        all_text = f"За все время: {all_count}"
 
-            day_count = week_count = month_count = all_count = 0
-    
-    for msg in messages:
-        if msg.date.date() == self.today:
-            day_count += 1
-        if self.week_ago <= msg.date.date() <= self.today:
-            week_count += 1
-        if self.month_ago <= msg.date.date() <= self.today:
-            month_count += 1
-        if msg.date.date() >= self.all_time:
-            all_count += 1
-
-    day_text = f"<b>За день:</b> <code>{day_count}</code>"
-    week_text = f"<b>За неделю:</b> <code>{week_count}</code>"
-    month_text = f"<b>За месяц:</b> <code>{month_count}</code>"
-    all_text = f"<b>За все время:</b> <code>{all_count}</code>"
-    
-    activity_text = "<b>👾Ваша статистика активности в этом чате:</b>\n"
-    await utils.answer(message, f"{search_text.replace('🔪', '🔍')}\n{activity_text}{day_text}\n{week_text}\n{month_text}\n{all_text}") 
+        await utils.answer(message, f"👾Вот ваша статистика активности в этом чате:\n{day_text}\n{week_text}\n{month_text}\n{all_text}")
