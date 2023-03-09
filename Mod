@@ -28,7 +28,7 @@ class MessageStatsMod(loader.Module):
 
     async def messagestatscmd(self, message: types.Message):
         """Показывает статистику сообщений"""
-        await utils.answer(message, "👺🔪Считаю сообщения...")
+        await utils.answer(message, f"<b>👺🔪Считаю сообщения...</b>")
         day_count = week_count = month_count = all_count = 0
         async for msg in self._client.iter_messages(message.to_id):
             if msg.date.date() == self.today:
@@ -40,9 +40,9 @@ class MessageStatsMod(loader.Module):
             if msg.date.date() >= self.all_time:
                 all_count += 1
 
-        day_text = f"За день: {day_count}"
-        week_text = f"За неделю: {week_count}"
-        month_text = f"За месяц: {month_count}"
-        all_text = f"За все время: {all_count}"
+        day_text = f"<b>За день:</b> <code>{day_count}</code>"
+        week_text = f"<b>За неделю:</b> <code>{week_count}</code>"
+        month_text = f"<b>За месяц:</b> <code>{month_count}</code>"
+        all_text = f"<b>За все время:</b> <code>{all_count}</code>"
 
-        await utils.answer(message, f"👾Вот ваша статистика активности в этом чате:\n{day_text}\n{week_text}\n{month_text}\n{all_text}")
+        await utils.answer(message, f"<b>👾Вот ваша статистика активности в этом чате:</b>\n{day_text}\n{week_text}\n{month_text}\n{all_text}")
