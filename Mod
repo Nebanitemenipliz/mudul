@@ -20,7 +20,11 @@ class MessageStatsMod(loader.Module):
 
     async def client_ready(self, client, db):
         self._client = client
-        self.all_time = (await self._client.get_messages(await self._client.get_input_entity(await self._client.get_me()), limit=1))[0].date.date()
+        me = await self._client.get_me()
+        async for dialog in self._client.iter_dialogs():
+            if dialog.entity.id == me.id:
+                self.all_time = (await self._client.get_messages(dialog, limit=1))[0].date.date()
+                break
 
     async def messagestatscmd(self, message: types.Message):
         """Показывает статистику сообщений"""
