@@ -1,7 +1,14 @@
-#аааа
 from telethon import TelegramClient, events, Button
 from typing import Optional
 from .. import loader
+
+
+def _client() -> Optional[TelegramClient]:
+    client = getattr(loader.tg, '_client', None)
+    if client is None:
+        return None
+    return client
+
 
 @loader.tds
 class MyBotMod(loader.Module):
